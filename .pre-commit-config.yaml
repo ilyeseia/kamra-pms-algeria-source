@@ -1,0 +1,86 @@
+exclude: 'node_modules|.git'
+default_stages: [pre-commit]
+fail_fast: false
+
+
+repos:
+  # Secret scanning, first so it fails before anything cosmetic. Gitleaks
+  # scans the STAGED diff only (--staged --redact), not the whole tree, so it
+  # guards what you are about to commit and stays fast. It does not replace
+  # .gitignore - that stops a secret file being added at all; this catches a
+  # secret pasted into a file that belongs in the repo.
+  #
+  # If it ever fires on the deliberate demo credentials in
+  # frontend/src/screens/Login.tsx or kamra/scripts/seed_users.py, add a
+  # .gitleaksignore entry for those specific findings rather than disabling
+  # the hook. Because it only reads staged changes, it stays quiet unless
+  # someone actually edits those files.
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+        name: "Scan staged changes for secrets"
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+        files: "kamra.*"
+        exclude: ".*json$|.*txt$|.*csv|.*md|.*svg"
+      - id: check-merge-conflict
+      - id: check-ast
+      - id: check-json
+      - id: check-toml
+      - id: check-yaml
+      - id: debug-statements
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.10
+    hooks:
+      - id: ruff
+        name: "Run ruff import sorter"
+        args: ["--select=I", "--fix"]
+
+      - id: ruff
+        name: "Run ruff linter"
+
+      - id: ruff-format
+        name: "Run ruff formatter"
+
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v2.7.1
+    hooks:
+      - id: prettier
+        types_or: [javascript, vue, scss]
+        # Ignore any files that might contain jinja / bundles
+        exclude: |
+            (?x)^(
+                kamra/public/dist/.*|
+                .*node_modules.*|
+                .*boilerplate.*|
+                kamra/templates/includes/.*|
+                kamra/public/js/lib/.*
+            )$
+
+
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v8.44.0
+    hooks:
+      - id: eslint
+        types_or: [javascript]
+        args: ['--quiet']
+        # Ignore any files that might contain jinja / bundles
+        exclude: |
+            (?x)^(
+                kamra/public/dist/.*|
+                cypress/.*|
+                .*node_modules.*|
+                .*boilerplate.*|
+                kamra/templates/includes/.*|
+                kamra/public/js/lib/.*
+            )$
+
+ci:
+    autoupdate_schedule: weekly
+    skip: []
+    submodules: false

@@ -1,0 +1,84 @@
+# Copyright (c) 2026 Ilyes Keskas (Algeria)
+# Part of the ZIRI PMS Algeria distribution of Kamra PMS.
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# See NOTICE for the upstream authorship this builds on.
+"""Which distribution this is, and where it gets its updates.
+
+Two version numbers exist here and they are not interchangeable
+(docs/algeria/VERSIONING.md):
+
+  Kamra core     2.6.x   owned upstream, lives in kamra/__init__.py
+  ZIRI PMS       1.0.x   owned by this repository, lives here and in git tags
+
+Until this module existed the distribution version lived only in git tags and
+prose, so nothing running could tell you which distribution it was. That had a
+concrete consequence: health.py read the CORE version and compared it against
+UPSTREAM's releases, so a ZIRI install was told "2.6.5 installed, 2.6.6
+available" and pointed at upstream's release page. Taking that advice on the
+Linux path means `install.sh update`, which defaults to upstream's repository
+and rebuilds the site from it - discarding the Algeria pack, the wilayas and
+communes, the DZD work and every patch this fork carries. An update offer that
+silently uninstalls the product is the worst shape a version check can take.
+
+The repository can be overridden per site so that a differently-branded build,
+or an internal mirror for a hotel with no route to github.com, does not need a
+code change:
+
+    bench --site <site> set-config kamra_update_repo "owner/repo"
+    bench --site <site> set-config kamra_update_tag_prefix "ziri-v"
+
+Set `kamra_update_repo` to an empty string to switch update checking off
+entirely. health.py then reports the installed versions and says checking is
+disabled, which is honest; it does not quietly pass.
+"""
+
+from __future__ import annotations
+
+import frappe
+
+DISTRIBUTION = "ZIRI PMS"
+
+# Keep in step with the newest `ziri-v*` tag.
+#
+# WHY THE -rc SUFFIX IS BACK, HAVING BEEN EARNED AWAY ONCE
+#
+# At 1.0.0 this comment recorded that the suffix had been dropped because the
+# condition it set had been met: a trial install existed, `bench migrate` had
+# run against it repeatedly across real schema changes, and a backup set from
+# it had been restored into a clean MariaDB and verified table by table. That
+# was true of 1.0.0 and it is still true of 1.0.0.
+#
+# It is not true of this. 1.1.0 adds one patch - v38.move_spa_route_to_ziri -
+# which rewrites `Website Settings.home_page` on every existing site, and one
+# new DocType. **No `bench migrate` has run from 1.0.0 to here, anywhere.** CI
+# installs a fresh site and never exercises the upgrade path (there is no
+# `bench migrate` in any workflow in this repository), and no server has been
+# updated. docs/algeria/VERSIONING.md says a tag is a claim that the thing
+# works and not to drop the suffix until a migrate has run against a real
+# database, so the suffix stays until one has.
+#
+# It becomes 1.1.0 when `install.sh update` has carried a real site from
+# 1.0.0 to here and the site passed its own health checks afterwards. The
+# release workflow marks any -rc tag as a prerelease, which keeps it out of
+# GitHub's /releases/latest - so no existing 1.0.0 install is told an update
+# is available while that is still outstanding.
+#
+# ziri-release.yml refuses to publish a tag that disagrees with this line, so
+# the two cannot drift apart by accident.
+DISTRIBUTION_VERSION = "1.1.0-rc.1"
+
+# Releases of THIS distribution, not upstream's. Tags carry a prefix so they
+# cannot collide with upstream's `v2.6.5` style in the same repository.
+DEFAULT_UPDATE_REPO = "ilyeseia/kamra-pms-algeria"
+DEFAULT_TAG_PREFIX = "ziri-v"
+
+
+def update_repo() -> str:
+	"""`owner/repo` to check for updates; empty string disables checking."""
+	v = frappe.conf.get("kamra_update_repo")
+	return (DEFAULT_UPDATE_REPO if v is None else str(v)).strip()
+
+
+def tag_prefix() -> str:
+	v = frappe.conf.get("kamra_update_tag_prefix")
+	return (DEFAULT_TAG_PREFIX if v is None else str(v)).strip()

@@ -1,0 +1,63 @@
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+.venv/
+
+# Node / frontend
+node_modules/
+frontend/dist/
+frontend/tsconfig.tsbuildinfo
+
+# Frappe
+kamra/public/dist/
+kamra/public/node_modules/
+*.log
+
+# Local
+.DS_Store
+.env
+
+# Secrets — never commit. site_config.json is the important one: a Frappe
+# site's config holds the database credentials AND the encryption key that
+# decrypts every stored password on the site. The rest are the files an
+# operator is most likely to create next to a checkout while following
+# deploy/README.md — deploy/.env.example tells them to write `kamra.env`.
+site_config.json
+.env.*
+!.env.example
+kamra.env
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.jks
+*.keystore
+id_rsa
+id_rsa.*
+id_ed25519
+id_ed25519.*
+.npmrc
+.pypirc
+secrets.json
+
+# Internal operator plans — keep local only, never publish
+PLAN.md
+docs/adr-str.md
+docs-site/node_modules/
+docs-site/.vitepress/dist/
+docs-site/.vitepress/cache/
+
+graphify-out/
+node_modules
+
+# Build artifact: the Windows installer is a release asset, attached to a
+# GitHub Release rather than committed. Rebuild it with:
+#   makensis deploy/windows/ZiriPms-Setup.nsi
+deploy/windows/*.exe
+
+# Backup sets written by deploy/backup-verify.sh. Each one contains a full
+# database dump AND site_config.json, which carries the database password and
+# the site encryption key — as sensitive as the database itself.
+.backup-sets/
